@@ -30,8 +30,6 @@ The script also handles baseline security before installing anything:
 
 ```bash
 # On your fresh Ubuntu server (as root):
-git clone https://github.com/YOUR_USERNAME/web3-audit-server.git
-cd web3-audit-server
 chmod +x setup-security-tools.sh
 sudo ./setup-security-tools.sh
 ```
