@@ -1,8 +1,8 @@
-# 🛡️ web3-audit-server
+# 🛡️ Gas Town Audit Suite
 
 One-command setup for a hardened Ubuntu server with a complete web3 security audit toolkit.
 
-Spins up a dedicated `conductor` user, locks down SSH, and installs seven security tools — everything you need to start auditing smart contracts, verifying protocols, and running static analysis on a fresh Linode (or any Ubuntu 22.04/24.04 VPS).
+Spins up a dedicated `conductor` user, locks down SSH, and installs seven security tools — everything you need to start auditing smart contracts, verifying protocols, and running static analysis on a fresh Ubuntu 22.04/24.04 VPS.
 
 ## What gets installed
 
