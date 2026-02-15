@@ -30,7 +30,15 @@ warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()   { echo -e "${RED}[ERR]${NC}   $*"; }
 
 # ---------- sanity checks ----------------------------------------------------
-if [[ $EUID -ne 0 ]]; then
+# Ensure we're running under bash (not sh/dash)
+if [ -z "${BASH_VERSION:-}" ]; then
+  err "This script must be run with bash, not sh."
+  err "Usage:  sudo bash setup-security-tools.sh"
+  err "   or:  chmod +x setup-security-tools.sh && sudo ./setup-security-tools.sh"
+  exit 1
+fi
+
+if [[ $(id -u) -ne 0 ]]; then
   err "Please run as root:  sudo ./setup-security-tools.sh"
   exit 1
 fi
@@ -206,15 +214,13 @@ if ! command -v node &>/dev/null; then
 fi
 info "Node version: $(node --version)"
 
-# --- Install Gastown via npm (most portable for Linux) ---
-info "Installing Gastown (npm global)..."
-sudo -u "${REAL_USER}" npm install -g @gastown/gt || {
-  warn "npm install failed, trying go install..."
-  sudo -u "${REAL_USER}" bash -c "
-    export PATH='/usr/local/go/bin:\$HOME/go/bin:\$PATH'
-    go install github.com/steveyegge/gastown/cmd/gt@latest
-  "
-}
+# --- Install Gastown via go install ---
+info "Installing Gastown (go install)..."
+sudo -u "${REAL_USER}" bash -c "
+  export PATH='/usr/local/go/bin:\$HOME/go/bin:\$PATH'
+  cd \$HOME
+  go install github.com/steveyegge/gastown/cmd/gt@latest
+"
 
 info "Gastown installed."
 
@@ -223,39 +229,34 @@ info "Gastown installed."
 ###############################################################################
 info "=== Installing Slither ==="
 
-# Install solc-select + slither in a clean way
-pip3 install --break-system-packages slither-analyzer solc-select
+# Install in a venv to avoid conflicts with system Python packages
+SLITHER_VENV="/opt/slither-venv"
+python3 -m venv "${SLITHER_VENV}"
+"${SLITHER_VENV}/bin/pip" install --upgrade pip
+"${SLITHER_VENV}/bin/pip" install slither-analyzer solc-select
+
+# Symlink binaries to /usr/local/bin so they're on PATH for all users
+ln -sf "${SLITHER_VENV}/bin/slither" /usr/local/bin/slither
+ln -sf "${SLITHER_VENV}/bin/solc-select" /usr/local/bin/solc-select
+ln -sf "${SLITHER_VENV}/bin/solc" /usr/local/bin/solc
 
 # Install a default solc version
-sudo -u "${REAL_USER}" bash -c "
-  export PATH=\"\$HOME/.local/bin:\$PATH\"
+sudo -u "${REAL_USER}" bash -c '
+  export PATH="/usr/local/bin:$PATH"
   solc-select install 0.8.24 && solc-select use 0.8.24
-" || warn "solc-select setup may need manual 'solc-select use <version>'"
+' || warn "solc-select setup may need manual 'solc-select use <version>'"
 
 info "Slither version: $(slither --version 2>/dev/null || echo 'check PATH')"
 
 ###############################################################################
-# 4. ADERYN (via cyfrinup)
+# 4. ADERYN (via official installer)
 ###############################################################################
 info "=== Installing Aderyn ==="
 
-# Aderyn needs Rust
-if ! sudo -u "${REAL_USER}" bash -c 'command -v cargo' &>/dev/null; then
-  info "Installing Rust toolchain for ${REAL_USER}..."
-  sudo -u "${REAL_USER}" bash -c "
-    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-  "
-fi
-
-# Install via cyfrinup (official method)
-info "Running cyfrinup..."
-sudo -u "${REAL_USER}" bash -c "
-  source \"\$HOME/.cargo/env\" 2>/dev/null || true
-  curl -L https://raw.githubusercontent.com/Cyfrin/aderyn/dev/cyfrinup/install | bash
-  source \"\$HOME/.bashrc\" 2>/dev/null || true
-  export PATH=\"\$HOME/.cyfrin/bin:\$HOME/.cargo/bin:\$PATH\"
-  cyfrinup
-"
+sudo -u "${REAL_USER}" bash -c '
+  cd $HOME
+  curl --proto "=https" --tlsv1.2 -LsSf https://github.com/cyfrin/aderyn/releases/latest/download/aderyn-installer.sh | sh
+'
 
 info "Aderyn installed."
 
@@ -268,6 +269,7 @@ info "=== Installing Tamarin Prover ==="
 if ! sudo -u "${REAL_USER}" bash -c 'command -v brew' &>/dev/null; then
   info "Installing Homebrew (Linuxbrew)..."
   sudo -u "${REAL_USER}" bash -c '
+    cd $HOME
     NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   '
 fi
@@ -287,6 +289,7 @@ fi
 
 info "Installing Tamarin via brew (this may take 30-60 min for first build)..."
 sudo -u "${REAL_USER}" bash -c "
+  cd \$HOME
   eval \"\$(${BREW_PREFIX}/bin/brew shellenv)\"
   brew install tamarin-prover/tap/tamarin-prover
   brew install tamarin-prover/tap/maude graphviz
@@ -405,7 +408,6 @@ BASHRC_BLOCK='
 export PATH="$HOME/.claude/bin:$PATH"
 export PATH="/usr/local/go/bin:$HOME/go/bin:$PATH"
 export PATH="$HOME/.cargo/bin:$PATH"
-export PATH="$HOME/.cyfrin/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 export PATH="/opt/codeql/codeql:$PATH"
 '
