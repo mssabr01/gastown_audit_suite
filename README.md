@@ -1,20 +1,21 @@
-# 🛡️ Gas Town Audit Suite
+# 🛡️ web3-audit-server
 
 One-command setup for a hardened Ubuntu server with a complete web3 security audit toolkit.
 
-Spins up a dedicated `conductor` user, locks down SSH, and installs seven security tools — everything you need to start auditing smart contracts, verifying protocols, and running static analysis on a fresh Ubuntu 22.04/24.04 VPS.
+Spins up a dedicated `conductor` user, locks down SSH, and installs seven security tools — everything you need to start auditing smart contracts, verifying protocols, and running static analysis on a fresh Linode (or any Ubuntu 22.04/24.04 VPS).
 
 ## What gets installed
 
 | # | Tool | Purpose | Binary |
 |---|------|---------|--------|
 | 1 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview) | AI coding agent for auditing assistance | `claude` |
-| 2 | [Gastown](https://github.com/steveyegge/gastown) | Multi-agent orchestrator for parallel Claude Code sessions | `gt` |
-| 3 | [Slither](https://github.com/crytic/slither) | Solidity/Vyper static analysis (Trail of Bits) | `slither` |
-| 4 | [Aderyn](https://github.com/Cyfrin/aderyn) | Rust-based Solidity static analyzer (Cyfrin) | `aderyn` |
-| 5 | [Tamarin Prover](https://tamarin-prover.com/) | Formal verification of cryptographic protocols | `tamarin-prover` |
-| 6 | [TLA+](https://github.com/tlaplus/tlaplus) | Formal specification & model checking for protocol logic | `tlc` `pcal` `tla-sany` `tla-repl` |
-| 7 | [CodeQL](https://codeql.github.com/) | Semantic code analysis engine (GitHub) | `codeql` |
+| 2 | [Beads (bd)](https://github.com/steveyegge/beads) | Agent memory & issue tracker (Gastown dependency) | `bd` |
+| 3 | [Gastown](https://github.com/steveyegge/gastown) | Multi-agent orchestrator for parallel Claude Code sessions | `gt` |
+| 4 | [Slither](https://github.com/crytic/slither) | Solidity/Vyper static analysis (Trail of Bits) | `slither` |
+| 5 | [Aderyn](https://github.com/Cyfrin/aderyn) | Rust-based Solidity static analyzer (Cyfrin) | `aderyn` |
+| 6 | [Tamarin Prover](https://tamarin-prover.com/) | Formal verification of cryptographic protocols | `tamarin-prover` |
+| 7 | [TLA+](https://github.com/tlaplus/tlaplus) | Formal specification & model checking for protocol logic | `tlc` `pcal` `tla-sany` `tla-repl` |
+| 8 | [CodeQL](https://codeql.github.com/) | Semantic code analysis engine (GitHub) | `codeql` |
 
 ## Server hardening
 
@@ -30,6 +31,8 @@ The script also handles baseline security before installing anything:
 
 ```bash
 # On your fresh Ubuntu server (as root):
+git clone https://github.com/YOUR_USERNAME/web3-audit-server.git
+cd web3-audit-server
 chmod +x setup-security-tools.sh
 sudo ./setup-security-tools.sh
 ```
@@ -75,7 +78,7 @@ codeql version
 
 The script installs these runtimes as dependencies — you don't need to pre-install anything:
 
-- **Go** 1.23.6 (for Gastown)
+- **Go** 1.23.6 (for Beads and Gastown)
 - **Node.js** 22 LTS (for Gastown)
 - **Python 3** + pip (for Slither)
 - **Rust** via rustup (for Aderyn)
@@ -85,6 +88,8 @@ The script installs these runtimes as dependencies — you don't need to pre-ins
 ## Tool selection rationale
 
 This toolkit covers the full spectrum of web3 security work:
+
+**Agent memory** — Beads (`bd`) is a lightweight, git-backed issue tracker designed for AI coding agents. It gives agents persistent memory across sessions with dependency tracking and ready-work detection. Required by Gastown for multi-agent coordination.
 
 **Smart contract static analysis** — Slither and Aderyn catch different classes of Solidity vulnerabilities. Running both gives better coverage than either alone. Slither excels at data-flow analysis and has more detectors; Aderyn is faster and produces cleaner reports.
 
