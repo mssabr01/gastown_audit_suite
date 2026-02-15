@@ -4,12 +4,13 @@
 #
 # Automated setup for a fresh Linode (Ubuntu 22.04/24.04) server:
 #   1. Claude Code – AI coding agent CLI (native installer)
-#   2. Gastown   – multi-agent workspace manager (Go)
-#   3. Slither   – Solidity static analyzer (Python/pip)
-#   4. Aderyn    – Solidity static analyzer (Rust/cyfrinup)
-#   5. Tamarin Prover – security protocol verifier (Homebrew/Linuxbrew)
-#   6. TLA+      – formal specification & model checking (Java jar + wrappers)
-#   7. CodeQL    – GitHub semantic code analysis (binary bundle)
+#   2. Beads (bd) – agent memory/issue tracker (Go)
+#   3. Gastown   – multi-agent workspace manager (Go, requires Beads)
+#   4. Slither   – Solidity static analyzer (Python/pip)
+#   5. Aderyn    – Solidity static analyzer (Rust/cyfrinup)
+#   6. Tamarin Prover – security protocol verifier (Homebrew/Linuxbrew)
+#   7. TLA+      – formal specification & model checking (Java jar + wrappers)
+#   8. CodeQL    – GitHub semantic code analysis (binary bundle)
 #
 # Usage:
 #   chmod +x setup-security-tools.sh
@@ -183,12 +184,11 @@ fi
 info "Claude Code installed. Run 'claude' to authenticate."
 
 ###############################################################################
-# 2. GASTOWN
+# 2. BEADS (bd) – agent memory / issue tracker (Gastown dependency)
 ###############################################################################
-info "=== Installing Gastown ==="
+info "=== Installing Beads (bd) ==="
 
-# Gastown needs Go and Node.js
-# --- Go ---
+# Beads needs Go – install Go first if not present
 GO_VERSION="1.23.6"
 if ! command -v go &>/dev/null; then
   info "Installing Go ${GO_VERSION}..."
@@ -206,6 +206,21 @@ EOF
 
 info "Go version: $(go version)"
 
+# Install Beads via go install
+info "Installing Beads (go install)..."
+sudo -u "${REAL_USER}" bash -c "
+  export PATH='/usr/local/go/bin:\$HOME/go/bin:\$PATH'
+  cd \$HOME
+  go install github.com/steveyegge/beads/cmd/bd@latest
+"
+info "Beads (bd) installed."
+
+###############################################################################
+# 3. GASTOWN
+###############################################################################
+info "=== Installing Gastown ==="
+
+# Gastown needs Node.js (Go already installed above for Beads)
 # --- Node.js (LTS via NodeSource) ---
 if ! command -v node &>/dev/null; then
   info "Installing Node.js 22 LTS..."
@@ -225,7 +240,7 @@ sudo -u "${REAL_USER}" bash -c "
 info "Gastown installed."
 
 ###############################################################################
-# 3. SLITHER
+# 4. SLITHER
 ###############################################################################
 info "=== Installing Slither ==="
 
@@ -249,7 +264,7 @@ sudo -u "${REAL_USER}" bash -c '
 info "Slither version: $(slither --version 2>/dev/null || echo 'check PATH')"
 
 ###############################################################################
-# 4. ADERYN (via official installer)
+# 5. ADERYN (via official installer)
 ###############################################################################
 info "=== Installing Aderyn ==="
 
@@ -261,7 +276,7 @@ sudo -u "${REAL_USER}" bash -c '
 info "Aderyn installed."
 
 ###############################################################################
-# 5. TAMARIN PROVER (via Linuxbrew)
+# 6. TAMARIN PROVER (via Linuxbrew)
 ###############################################################################
 info "=== Installing Tamarin Prover ==="
 
@@ -298,7 +313,7 @@ sudo -u "${REAL_USER}" bash -c "
 info "Tamarin Prover installed."
 
 ###############################################################################
-# 6. TLA+ (TLC model checker + PlusCal translator + Community Modules)
+# 7. TLA+ (TLC model checker + PlusCal translator + Community Modules)
 ###############################################################################
 info "=== Installing TLA+ Tools ==="
 
@@ -362,7 +377,7 @@ chmod +x /usr/local/bin/tla-repl
 info "TLA+ installed. Tools: tlc, pcal, tla-sany, tla-repl"
 
 ###############################################################################
-# 7. CODEQL
+# 8. CODEQL
 ###############################################################################
 info "=== Installing CodeQL CLI ==="
 
@@ -435,12 +450,13 @@ warn "    ssh ${CONDUCTOR}@<this-server-ip>"
 echo ""
 info "Installed tools (for user '${CONDUCTOR}'):"
 info "  1. Claude Code → claude"
-info "  2. Gastown     → gt"
-info "  3. Slither     → slither"
-info "  4. Aderyn      → aderyn"
-info "  5. Tamarin     → tamarin-prover"
-info "  6. TLA+        → tlc, pcal, tla-sany, tla-repl"
-info "  7. CodeQL      → codeql"
+info "  2. Beads (bd)  → bd"
+info "  3. Gastown     → gt"
+info "  4. Slither     → slither"
+info "  5. Aderyn      → aderyn"
+info "  6. Tamarin     → tamarin-prover"
+info "  7. TLA+        → tlc, pcal, tla-sany, tla-repl"
+info "  8. CodeQL      → codeql"
 echo ""
 warn "After logging in as '${CONDUCTOR}', run:"
 warn "  source ~/.bashrc"
