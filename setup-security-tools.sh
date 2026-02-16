@@ -161,11 +161,24 @@ info "All tools will be installed for user: ${REAL_USER}"
 # ---------- system packages --------------------------------------------------
 info "Updating system and installing base dependencies..."
 apt-get update -qq
+apt-get upgrade -y -qq
+
 apt-get install -y -qq \
   build-essential curl wget git unzip tar zstd jq \
   python3 python3-pip python3-venv python3-dev \
   software-properties-common ca-certificates \
   graphviz tmux
+
+# ---------- desktop environment (XFCE4 + LightDM + Firefox) -----------------
+info "Installing XFCE4 desktop environment, LightDM, and Firefox..."
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+  xfce4 xfce4-goodies dbus-x11 firefox
+
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq lightdm
+
+info "Setting LightDM as default display manager..."
+echo "/usr/sbin/lightdm" > /etc/X11/default-display-manager
+DEBIAN_FRONTEND=noninteractive dpkg-reconfigure lightdm
 
 ###############################################################################
 # 1. CLAUDE CODE (native installer — no Node.js required)
@@ -211,7 +224,7 @@ info "Installing Beads (go install)..."
 sudo -u "${REAL_USER}" bash -c "
   export PATH='/usr/local/go/bin:\$HOME/go/bin:\$PATH'
   cd \$HOME
-  go install github.com/steveyegge/beads/cmd/bd@latest
+  go install github.com/steveyegge/beads/cmd/bd@v0.49.1
 "
 info "Beads (bd) installed."
 
